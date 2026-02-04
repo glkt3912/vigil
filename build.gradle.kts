@@ -9,7 +9,9 @@ version = "0.1.0"
 kotlin {
     jvm()
     mingwX64 {
-        binaries.executable()
+        binaries.executable {
+            entryPoint = "vigil.main"
+        }
     }
 
     sourceSets {
