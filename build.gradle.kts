@@ -7,6 +7,11 @@ group = "com.vigil"
 version = "0.1.0"
 
 kotlin {
+    // expect/actual class の Beta 警告を抑制
+    compilerOptions {
+        freeCompilerArgs.add("-Xexpect-actual-classes")
+    }
+
     jvm()
     mingwX64 {
         binaries.executable {
