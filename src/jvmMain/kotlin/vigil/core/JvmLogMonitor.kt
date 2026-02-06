@@ -44,23 +44,28 @@ actual class PlatformLogMonitor actual constructor(
 
         // 監視ループを別コルーチンで実行
         launch(Dispatchers.IO) {
-            while (isActive) {
-                val key = watchService.take()  // ブロッキング
-                for (event in key.pollEvents()) {
-                    val changedFile = event.context() as? Path ?: continue
-                    if (changedFile.toString() != fileName) continue
+            try {
+                while (isActive) {
+                    val key = watchService.take()  // ブロッキング
+                    for (event in key.pollEvents()) {
+                        val changedFile = event.context() as? Path ?: continue
+                        if (changedFile.toString() != fileName) continue
 
-                    // ファイルの新しい部分を読み取る
-                    val newLines = readNewLines(path, lastPosition)
-                    lastPosition = newLines.second
+                        // ファイルの新しい部分を読み取る
+                        val newLines = readNewLines(path, lastPosition)
+                        lastPosition = newLines.second
 
-                    // 各行を LogEvent に変換して送信
-                    for (line in newLines.first) {
-                        val logEvent = parseLine(line)
-                        trySend(logEvent)
+                        // 各行を LogEvent に変換して送信
+                        for (line in newLines.first) {
+                            val logEvent = parseLine(line)
+                            trySend(logEvent)
+                        }
                     }
+                    key.reset()
                 }
-                key.reset()
+            } catch (_: java.nio.file.ClosedWatchServiceException) {
+                // Flow キャンセル時に awaitClose で WatchService が閉じられる。
+                // ブロッキング中の take() が ClosedWatchServiceException を投げるので正常終了。
             }
         }
 
@@ -82,7 +87,7 @@ actual class PlatformLogMonitor actual constructor(
     }
 
     // ファイルの指定位置から末尾まで読み取り、新しい行と新しい位置を返す
-    private fun readNewLines(path: Path, fromPosition: Long): Pair<List<String>, Long> {
+    internal fun readNewLines(path: Path, fromPosition: Long): Pair<List<String>, Long> {
         RandomAccessFile(path.toFile(), "r").use { file ->
             val currentLength = file.length()
             if (currentLength <= fromPosition) {
@@ -101,7 +106,7 @@ actual class PlatformLogMonitor actual constructor(
     }
 
     // 行をパースして LogEvent に変換（簡易実装）
-    private fun parseLine(line: String): LogEvent {
+    internal fun parseLine(line: String): LogEvent {
         // 簡易的なパース: [LEVEL] message 形式を想定
         val levelPattern = Regex("""^\[(\w+)](.*)$""")
         val match = levelPattern.find(line.trim())

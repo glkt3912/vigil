@@ -21,7 +21,7 @@ fun <T> Flow<T>.retryWithBackoff(config: BackoffConfig): Flow<T> =
     }
 
 // 指数バックオフ + ジッターの遅延時間を計算
-private fun calculateDelay(config: BackoffConfig, attempt: Long): Duration {
+internal fun calculateDelay(config: BackoffConfig, attempt: Long): Duration {
     // base * multiplier^attempt
     val exponentialMs = config.initialDelay.inWholeMilliseconds *
         config.multiplier.pow(attempt.toInt())
