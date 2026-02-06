@@ -83,6 +83,7 @@ NestJS 開発者向けに Kotlin/KMP の概念を解説したドキュメント�
 - [x] WebSocket 送信パイプライン
 - [x] JVM 実装 (WatchService)
 - [x] Windows Native スタブ
+- [ ] [#17](../../issues/17) ユニットテスト・統合テストの追加
 
 ### Phase 2: 配布基盤 + UX 向上
 
