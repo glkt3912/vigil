@@ -74,7 +74,7 @@ NestJS 開発者向けに Kotlin/KMP の概念を解説したドキュメント�
 
 ## ロードマップ
 
-### Phase 1: コアプロトタイプ (完了)
+### Phase 1: コアプロトタイプ ✅
 
 - [x] ビルド基盤 (KMP + Gradle)
 - [x] データモデル (LogEvent, LogLevel)
@@ -84,12 +84,36 @@ NestJS 開発者向けに Kotlin/KMP の概念を解説したドキュメント�
 - [x] JVM 実装 (WatchService)
 - [x] Windows Native スタブ
 
-### Phase 2: 通知トレイ常駐型ツール (予定)
+### Phase 2: 配布基盤 + UX 向上
 
-- [ ] デスクトップ通知 (JVM: SystemTray / Windows: Shell_NotifyIcon)
-- [ ] フィルタリング強化 (重複排除、時間ウィンドウ)
-- [ ] 設定ファイル対応
-- [ ] Windows Native 実装 (ReadDirectoryChangesW)
+- [ ] [#5](../../issues/5) GitHub Actions による exe/jar 自動配布
+- [ ] [#14](../../issues/14) リングバッファによる過去ログ初回送信
+- [ ] [#2](../../issues/2) フィルタリング強化（重複排除・時間ウィンドウ）
+
+### Phase 3: セキュリティ + 設定
+
+- [ ] [#12](../../issues/12) PiiMasker: 自動マスキング
+- [ ] [#6](../../issues/6) Kotlin DSL によるパイプライン設定
+- [ ] [#3](../../issues/3) 設定ファイル対応（YAML/JSON）
+- [ ] [#9](../../issues/9) 設定ホットリロード
+
+### Phase 4: 双方向通信 + 通知
+
+- [ ] [#13](../../issues/13) 動的フィルタリング（双方向 WebSocket）
+- [ ] [#1](../../issues/1) デスクトップ通知
+- [ ] [#15](../../issues/15) マルチ・デスティネーション（Slack/Discord 連携）
+- [ ] [#10](../../issues/10) スマート・スロットリング
+
+### Phase 5: Windows 強化 + クライアント
+
+- [ ] [#4](../../issues/4) Windows Native 実装（ReadDirectoryChangesW）
+- [ ] [#7](../../issues/7) Windows Event Log 監視
+- [ ] [#8](../../issues/8) CLI ダッシュボード (TUI)
+- [ ] [#11](../../issues/11) VS Code 拡張機能
+
+### Phase 6: 最適化
+
+- [ ] [#16](../../issues/16) Protocol Buffers 送信モード
 
 ## ライセンス
 
