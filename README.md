@@ -71,6 +71,7 @@ NestJS 開発者向けに Kotlin/KMP の概念を解説したドキュメント�
 | [05-websocket-pipeline.md](docs/05-websocket-pipeline.md) | WebSocket パイプライン |
 | [06-jvm-implementation.md](docs/06-jvm-implementation.md) | JVM 実装と WatchService |
 | [07-windows-implementation.md](docs/07-windows-implementation.md) | Windows Native と Win32 API |
+| [08-testing.md](docs/08-testing.md) | テストと Jest 対比 |
 
 ## ロードマップ
 
@@ -83,7 +84,7 @@ NestJS 開発者向けに Kotlin/KMP の概念を解説したドキュメント�
 - [x] WebSocket 送信パイプライン
 - [x] JVM 実装 (WatchService)
 - [x] Windows Native スタブ
-- [ ] [#17](../../issues/17) ユニットテスト・統合テストの追加
+- [x] [#17](../../issues/17) ユニットテスト・統合テストの追加
 
 ### Phase 2: 配布基盤 + UX 向上
 
