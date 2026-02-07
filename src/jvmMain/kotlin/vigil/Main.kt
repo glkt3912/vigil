@@ -3,12 +3,17 @@ package vigil
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.runBlocking
 import vigil.core.MonitorConfig
+import vigil.engine.DefaultPluginContext
 import vigil.engine.VigilEngine
-import vigil.plugin.PluginContext
 import kotlin.time.Duration.Companion.seconds
 
 // NestJS の main.ts に相当するエントリポイント。
 // VigilEngine にプラグインを登録し、ライフサイクルを開始する。
+//
+// プラグインが publish() したメッセージは DefaultPluginContext 内で
+// LogEvent (metadata["type"]="context") に変換され、events Flow に流れる。
+// この Flow を WebSocketPipeline.connect(context.events) に渡せば
+// 既存パイプライン経由で WebSocket 送信される。
 fun main() = runBlocking {
     println("Vigil - Log Monitor (JVM)")
 
@@ -17,18 +22,15 @@ fun main() = runBlocking {
         wsUrl = "ws://localhost:8080/logs",
     )
 
-    // デフォルトの PluginContext 実装（ファイル出力 + ログ表示）
-    val context = object : PluginContext {
-        override val config: MonitorConfig = config
-        override suspend fun publish(message: String) {
-            println("[vigil:publish] ${message.lines().first()}...")
-        }
-    }
-
+    val context = DefaultPluginContext(config)
     val engine = VigilEngine(heartbeatInterval = 30.seconds)
 
     // プラグイン登録はここに追加:
     // engine.register(ContextManagerPlugin())
+
+    // パイプライン接続例:
+    // val pipeline = WebSocketPipeline(config, httpClient)
+    // launch { pipeline.connect(context.events) }
 
     coroutineScope {
         engine.start(this, context)
