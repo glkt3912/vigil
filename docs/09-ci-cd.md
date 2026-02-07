@@ -97,7 +97,7 @@ jobs:
           java-version: '21'
           cache: 'gradle'
       - run: chmod +x ./gradlew
-      - run: ./gradlew allTests --no-daemon
+      - run: ./gradlew jvmTest --no-daemon
       - run: ./gradlew jvmJar --no-daemon
 ```
 
@@ -152,13 +152,67 @@ jobs:
 | ランタイムセットアップ | `actions/setup-node` | `actions/setup-java` (Temurin JDK 21) |
 | パッケージマネージャ | npm (`npm ci`) | Gradle (`./gradlew`) |
 | キャッシュ対象 | `node_modules` | Gradle 依存関係 + ビルドキャッシュ |
-| テスト実行 | `npm test` | `./gradlew allTests` |
+| テスト実行 | `npm test` | `./gradlew jvmTest` (CI) / `allTests` (ローカル) |
 | ビルド | `npm run build` | `./gradlew jvmJar` / `linkReleaseExecutableMingwX64` |
 | 成果物の形式 | npm パッケージ (.tgz) | jar (JVM) / exe (Windows Native) |
 | 配布先 | npm registry | GitHub Releases |
 | 配布トリガー | `npm publish` | `softprops/action-gh-release` |
 | CI ランナー | ubuntu-latest | ubuntu-latest (CI) / windows-latest (Release) |
 | 認証 | `NPM_TOKEN` (secret) | `GITHUB_TOKEN` (自動付与) |
+
+---
+
+## 補足: CI のテスト戦略 — `jvmTest` vs `allTests`
+
+### KMP テストの仕組み
+
+KMP では `commonTest` に書いたテストが**各ターゲットで**実行される:
+
+```
+./gradlew allTests
+  ├── jvmTest         ← commonTest を JVM で実行 + jvmTest 固有テスト
+  └── mingwX64Test    ← commonTest を Native で実行
+```
+
+```
+./gradlew jvmTest
+  └── jvmTest         ← commonTest を JVM で実行 + jvmTest 固有テスト
+```
+
+### Vigil のテスト構成（現状）
+
+```
+src/
+├── commonTest/     ← 6 ファイル（モデル, フィルタ, リトライ等）
+├── jvmTest/        ← 2 ファイル（JvmLogMonitor, WebSocketPipeline）
+└── mingwX64Test/   ← なし（固有テスト未作成）
+```
+
+### なぜ CI では `jvmTest` のみにしているか
+
+| 観点 | `jvmTest` のみ | `allTests` |
+| --- | --- | --- |
+| CI 実行時間 | **~30 秒** | ~2 分以上 |
+| Native 依存 DL | 不要 | LLVM + sysroot (~25秒) |
+| `commonTest` カバレッジ | JVM 上で実行 | JVM + Native 両方で実行 |
+| `mingwX64Test` 固有テスト | スキップ | 実行（現状はテストなし） |
+
+**トレードオフ:**
+
+`commonTest` のコードは JVM 上でも実行されるため、ロジックのテスト自体は `jvmTest` で十分カバーできる。
+ただし、以下のケースでは `allTests` でないと検出できない:
+
+- **Kotlin/Native 固有の制約**: バッククォート関数名の `()` 禁止など、コンパイルレベルの差異
+- **プラットフォーム固有の挙動差**: 浮動小数点精度、文字列正規化、日時処理のエッジケース
+- **actual 実装のテスト**: `mingwX64Test` に Windows 固有のテストを追加した場合
+
+### NestJS との対比
+
+NestJS はシングルプラットフォーム (Node.js) なので、このトレードオフは発生しない。
+`npm test` だけで全てのテストが網羅される。
+
+KMP では「CI の速度」と「マルチプラットフォームの網羅性」のバランスを取る必要がある。
+Vigil では **CI は `jvmTest` で高速化し、リリース前にローカルで `allTests` を実行する** 方針を採用している。
 
 ---
 
@@ -194,7 +248,7 @@ TypeScript でのイメージ:
 CI 環境では `--no-daemon` を付けて Gradle を実行する。
 
 ```bash
-./gradlew allTests --no-daemon
+./gradlew jvmTest --no-daemon
 ```
 
 Gradle はデフォルトで **デーモンプロセス** をバックグラウンドに常駐させ、
