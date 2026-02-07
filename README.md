@@ -9,6 +9,7 @@ JVM と Windows Native (mingwX64) の両ターゲットに対応し、ファイ�
 - **マルチプラットフォーム**: 1つのコードベースから JVM (.jar) と Windows Native (.exe) を生成
 - **リアクティブストリーム**: Kotlin Flow による非同期パイプライン処理
 - **自動再接続**: 指数バックオフ + ジッターによる堅牢な WebSocket 接続
+- **プラグインシステム**: `VigilPlugin` インターフェースによる拡張機能の差し込み
 - **型安全**: コンパイル時に型エラーを検出、実行時エラーを最小化
 
 ## 技術スタック
@@ -57,13 +58,21 @@ src/
 │       ├── model/       # LogEvent, LogLevel
 │       ├── core/        # MonitorConfig, PlatformLogMonitor (expect)
 │       ├── pipeline/    # WebSocketPipeline, LogFilter
-│       └── retry/       # BackoffConfig, ExponentialBackoff
+│       ├── retry/       # BackoffConfig, ExponentialBackoff
+│       ├── plugin/      # VigilPlugin, PluginContext
+│       └── engine/      # VigilEngine
 ├── jvmMain/             # JVM 固有コード
 │   └── kotlin/vigil/
 │       └── core/        # JvmLogMonitor (actual)
 └── mingwX64Main/        # Windows Native 固有コード
     └── kotlin/vigil/
         └── core/        # WindowsLogMonitor (actual stub)
+
+plugins/
+└── context-manager/     # 開発コンテキスト管理プラグイン (JVM)
+    └── src/jvmMain/kotlin/vigil/plugin/contextmanager/
+        ├── ContextManagerPlugin.kt
+        └── GitCommandExecutor.kt
 ```
 
 ## ドキュメント
@@ -82,6 +91,9 @@ NestJS 開発者向けに Kotlin/KMP の概念を解説したドキュメント�
 | [07-windows-implementation.md](docs/07-windows-implementation.md) | Windows Native と Win32 API |
 | [08-testing.md](docs/08-testing.md) | テストと Jest 対比 |
 | [09-ci-cd.md](docs/09-ci-cd.md) | CI/CD と GitHub Actions |
+| [10-plugin-system.md](docs/10-plugin-system.md) | プラグインシステムとライフサイクル |
+| [11-multi-module.md](docs/11-multi-module.md) | マルチモジュール構成 |
+| [12-context-manager-plugin.md](docs/12-context-manager-plugin.md) | ContextManagerPlugin と ProcessBuilder |
 
 ## ロードマップ
 
@@ -98,7 +110,8 @@ NestJS 開発者向けに Kotlin/KMP の概念を解説したドキュメント�
 
 ### Phase 2: 配布基盤 + UX 向上
 
-- [ ] [#5](../../issues/5) GitHub Actions による exe/jar 自動配布
+- [x] [#5](../../issues/5) GitHub Actions による exe/jar 自動配布
+- [x] [#20](../../issues/20) 開発コンテキスト管理プラグインのプロトタイプ実装
 - [ ] [#14](../../issues/14) リングバッファによる過去ログ初回送信
 - [ ] [#2](../../issues/2) フィルタリング強化（重複排除・時間ウィンドウ）
 

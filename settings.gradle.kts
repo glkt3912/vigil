@@ -15,3 +15,4 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "vigil"
+include(":plugins:context-manager")

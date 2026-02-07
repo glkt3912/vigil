@@ -371,3 +371,103 @@ fun `filterByLevel WARN passes WARN ERROR FATAL`() { ... }
 
 これは Jest の `it('filterByLevel WARN passes WARN ERROR FATAL', ...)` に相当する。
 通常のコードでは使わないが、テストでは可読性のために広く使われている。
+
+---
+
+## 補足: SharedFlow のテストと UnconfinedTestDispatcher
+
+### SharedFlow (Hot Flow) とは
+
+`SharedFlow` は Kotlin Coroutines の「熱い (Hot) Flow」。
+NestJS でいうと `EventEmitter` や RxJS の `Subject` に相当する。
+
+```kotlin
+// Kotlin: SharedFlow で複数の受信者にイベントを放送
+val _events = MutableSharedFlow<LogEvent>(extraBufferCapacity = 64)
+val events: Flow<LogEvent> = _events.asSharedFlow()
+
+// 送信側
+_events.emit(event)
+
+// 受信側（複数可）
+events.collect { event -> println(event) }
+```
+
+```typescript
+// NestJS: EventEmitter2 で同等のことをする
+eventEmitter.emit('log.event', event);
+
+// 受信側（複数可）
+eventEmitter.on('log.event', (event) => console.log(event));
+```
+
+| 観点 | SharedFlow | RxJS Subject | EventEmitter |
+| --- | --- | --- | --- |
+| 複数リスナー | `collect` を複数起動 | `.subscribe()` を複数 | `.on()` を複数 |
+| 値の保持 | デフォルトで保持しない（replay=0） | 保持しない | 保持しない |
+| バッファ | `extraBufferCapacity` で設定 | なし | なし |
+
+**重要:** `replay = 0`（デフォルト）の場合、`emit` した瞬間に誰も `collect` していなければ値は消失する。
+
+### テストで発生する問題
+
+```kotlin
+// このテストは失敗する可能性がある
+@Test
+fun `broken test`() = runTest {
+    val context = DefaultPluginContext(config)
+
+    val job = launch {                    // ← StandardTestDispatcher: キューに入るだけ
+        val event = context.events.first() // ← まだ実行されていない
+    }
+
+    context.publish("hello")              // ← emit するが、collector がまだ待機していない
+    job.join()                            // ← 永遠に完了しない or 値を取りこぼす
+}
+```
+
+`runTest` のデフォルトディスパッチャ (`StandardTestDispatcher`) は、
+`launch` されたコルーチンを即座に実行せず、キューに溜める。
+そのため `publish()` が呼ばれた時点で collector がまだ起動しておらず、
+SharedFlow に emit された値が誰にも届かない。
+
+### UnconfinedTestDispatcher で解決
+
+```kotlin
+@Test
+fun `working test`() = runTest {
+    val context = DefaultPluginContext(config)
+
+    val job = launch(UnconfinedTestDispatcher(testScheduler)) { // ← 即座に実行開始
+        val event = context.events.first()                       // ← すぐに待機状態に入る
+    }
+
+    context.publish("hello")  // ← collector が待機中なので確実に届く
+    job.join()                // ← 正常に完了
+}
+```
+
+`UnconfinedTestDispatcher` は `launch` した瞬間にコルーチンを実行する。
+これにより collector が先に待機状態に入り、その後の `emit` を確実にキャッチできる。
+
+### 2 つのテストディスパッチャの対比
+
+| 観点 | StandardTestDispatcher | UnconfinedTestDispatcher |
+| --- | --- | --- |
+| 実行タイミング | キューに溜める（`runCurrent()` で明示的に進める） | `launch` した瞬間に即座に実行 |
+| NestJS 対比 | `jest.useFakeTimers()` + `jest.runAllTicks()` | デフォルトの `async/await` |
+| 用途 | 実行順序を厳密に制御したいテスト | SharedFlow など即時性が必要なテスト |
+| デフォルト | `runTest { }` のデフォルト | 明示的に指定が必要 |
+
+```text
+StandardTestDispatcher:
+  launch { collect }  →  キューに入る  →  publish()  →  emit、でも collector 未起動  →  値が消失
+                                                         ↓
+                                                    runCurrent() で初めて collector 起動
+
+UnconfinedTestDispatcher:
+  launch { collect }  →  即座に collector 起動・待機  →  publish()  →  emit → collector がキャッチ
+```
+
+Jest では `async/await` がデフォルトで「即座に」動くため、この問題は起きにくい。
+Kotlin のテストでは「仮想時間の制御」と「即時実行」を明示的に使い分ける必要がある。
