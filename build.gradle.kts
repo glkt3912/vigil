@@ -27,8 +27,15 @@ kotlin {
             implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.0")
             implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.2")
         }
+        commonTest.dependencies {
+            implementation(kotlin("test"))
+            implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
+        }
         jvmMain.dependencies {
             implementation("io.ktor:ktor-client-cio:3.1.1")
+        }
+        jvmTest.dependencies {
+            implementation("io.ktor:ktor-client-mock:3.1.1")
         }
         named("mingwX64Main") {
             dependencies {
