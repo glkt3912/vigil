@@ -134,7 +134,7 @@ class JvmLogMonitorTest {
                 }
             }
 
-            delay(1_000)
+            delay(3_000)
             tmpFile.appendText("[ERROR] disk full\n")
 
             job.join()

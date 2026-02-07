@@ -105,10 +105,11 @@ actual class PlatformLogMonitor actual constructor(
         }
     }
 
+    private val levelPattern = Regex("""^\[(\w+)](.*)$""")
+
     // 行をパースして LogEvent に変換（簡易実装）
     internal fun parseLine(line: String): LogEvent {
         // 簡易的なパース: [LEVEL] message 形式を想定
-        val levelPattern = Regex("""^\[(\w+)](.*)$""")
         val match = levelPattern.find(line.trim())
 
         val (level, message) = if (match != null) {
