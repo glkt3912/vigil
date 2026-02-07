@@ -39,6 +39,15 @@ JVM と Windows Native (mingwX64) の両ターゲットに対応し、ファイ�
 ./gradlew build
 ```
 
+## ダウンロード
+
+最新リリースは [GitHub Releases](https://github.com/glkt3912/vigil/releases/latest) からダウンロードできます。
+
+| ファイル | 対象 | 必要環境 |
+|---|---|---|
+| `vigil-x.y.z-jvm.jar` | 全プラットフォーム | JDK 21+ |
+| `vigil-x.y.z-windows.exe` | Windows | なし |
+
 ## プロジェクト構成
 
 ```
@@ -72,6 +81,7 @@ NestJS 開発者向けに Kotlin/KMP の概念を解説したドキュメント�
 | [06-jvm-implementation.md](docs/06-jvm-implementation.md) | JVM 実装と WatchService |
 | [07-windows-implementation.md](docs/07-windows-implementation.md) | Windows Native と Win32 API |
 | [08-testing.md](docs/08-testing.md) | テストと Jest 対比 |
+| [09-ci-cd.md](docs/09-ci-cd.md) | CI/CD と GitHub Actions |
 
 ## ロードマップ
 
