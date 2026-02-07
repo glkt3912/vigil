@@ -14,15 +14,19 @@ class ContextManagerPlugin(
     override val name = "context-manager"
 
     private val git by lazy { GitCommandExecutor(File(repoPath)) }
+    private var lastSnapshot: String? = null
 
     override suspend fun onInitialize(context: PluginContext) {
         val snapshot = buildSnapshot()
+        lastSnapshot = snapshot
         writeToFile(snapshot)
         context.publish(snapshot)
     }
 
     override suspend fun onHeartbeat(context: PluginContext) {
         val snapshot = buildSnapshot()
+        if (snapshot == lastSnapshot) return
+        lastSnapshot = snapshot
         writeToFile(snapshot)
         context.publish(snapshot)
     }

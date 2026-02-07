@@ -6,6 +6,7 @@ import vigil.plugin.PluginContext
 import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertContains
+import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class ContextManagerPluginTest {
@@ -69,6 +70,23 @@ class ContextManagerPluginTest {
         // 内容は同じ形式（ヘッダーが同一）
         assertContains(secondContent, "# Development Context Snapshot")
         assertTrue(firstContent.isNotBlank())
+
+        // cleanup
+        testOutputDir.deleteRecursively()
+    }
+
+    @Test
+    fun `onHeartbeat skips publish when snapshot is unchanged`() = runTest {
+        val published = mutableListOf<String>()
+        val context = testContext(published)
+        val plugin = ContextManagerPlugin(repoPath = findRepoRoot(), outputPath = testOutputPath)
+
+        plugin.onInitialize(context)
+        assertEquals(1, published.size, "onInitialize should publish once")
+
+        // Git 状態が変わらないので heartbeat はスキップされる
+        plugin.onHeartbeat(context)
+        assertEquals(1, published.size, "onHeartbeat should skip when unchanged")
 
         // cleanup
         testOutputDir.deleteRecursively()
