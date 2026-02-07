@@ -54,7 +54,7 @@ class LogEventTest {
     }
 
     @Test
-    fun `serializes to JSON and back (round-trip)`() {
+    fun `serializes to JSON and back round-trip`() {
         val event = sampleEvent(metadata = mapOf("key" to "value"))
         val jsonString = json.encodeToString(event)
         val deserialized = json.decodeFromString<LogEvent>(jsonString)
