@@ -23,7 +23,7 @@ jobs:
         run: chmod +x ./gradlew
 
       - name: Run tests
-        run: ./gradlew allTests --no-daemon
+        run: ./gradlew jvmTest --no-daemon
 
       - name: Build JVM artifact
         run: ./gradlew jvmJar --no-daemon

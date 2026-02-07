@@ -21,6 +21,13 @@ jobs:
           java-version: '21'
           cache: 'gradle'
 
+      - name: Cache Kotlin/Native dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.konan
+          key: konan-${{ runner.os }}-${{ hashFiles('**/*.gradle.kts') }}
+          restore-keys: konan-${{ runner.os }}-
+
       - name: Extract version from tag
         id: version
         shell: bash
