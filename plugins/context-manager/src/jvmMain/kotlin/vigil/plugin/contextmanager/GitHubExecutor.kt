@@ -1,10 +1,15 @@
 package vigil.plugin.contextmanager
 
 import java.io.File
+import java.util.concurrent.TimeUnit
 
 // gh CLI 経由で GitHub の Issue/PR 情報を取得する。
 // gh が未インストール or 未認証の環境では available=false となり、全メソッドが null を返す。
-class GitHubExecutor(private val workingDir: File = File(".")) {
+// ネットワーク不安定時のスタック防止のため、全コマンドにタイムアウトを設定。
+class GitHubExecutor(
+    private val workingDir: File = File("."),
+    private val timeoutSeconds: Long = 5,
+) {
 
     val available: Boolean by lazy {
         try {
@@ -12,7 +17,12 @@ class GitHubExecutor(private val workingDir: File = File(".")) {
                 .directory(workingDir)
                 .redirectErrorStream(true)
                 .start()
-            process.waitFor() == 0
+            val completed = process.waitFor(timeoutSeconds, TimeUnit.SECONDS)
+            if (!completed) {
+                process.destroyForcibly()
+                return@lazy false
+            }
+            process.exitValue() == 0
         } catch (_: Exception) {
             false
         }
@@ -47,10 +57,13 @@ class GitHubExecutor(private val workingDir: File = File(".")) {
             .directory(workingDir)
             .redirectErrorStream(true)
             .start()
-        val output = process.inputStream.bufferedReader().readText()
-        val exitCode = process.waitFor()
-        if (exitCode != 0) return ""
-        return output
+        val completed = process.waitFor(timeoutSeconds, TimeUnit.SECONDS)
+        if (!completed) {
+            process.destroyForcibly()
+            return ""
+        }
+        if (process.exitValue() != 0) return ""
+        return process.inputStream.bufferedReader().readText()
     }
 
     internal fun parsePR(json: String): PrInfo? {
