@@ -9,6 +9,12 @@ version = "0.1.0"
 kotlin {
     jvm()
 
+    jvm {
+        mainRun {
+            mainClass.set("vigil.plugin.contextmanager.VerifySnapshotKt")
+        }
+    }
+
     sourceSets {
         jvmMain.dependencies {
             implementation(project(":"))
