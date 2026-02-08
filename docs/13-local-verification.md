@@ -251,16 +251,66 @@ Kotlin ファイル `VerifySnapshot.kt` のトップレベル `fun main()` は�
 ## 補足: 循環依存を避けるパターン
 
 将来、ルートの `Main.kt` からプラグインを登録したい場合は、
-**サービスロケータ** or **リフレクション** パターンで解決する:
+**サービスロケータ** or **リフレクション** パターンで解決する。
+どちらもコード上の `import` を使わずにインスタンスを生成するため、循環依存が発生しない。
 
-```kotlin
-// 案: META-INF/services でプラグインを自動検出（ServiceLoader）
-val plugins = ServiceLoader.load(VigilPlugin::class.java)
-plugins.forEach { engine.register(it) }
-```
+### サービスロケータパターン（ServiceLoader）
+
+NestJS で言うと `ModuleRef` で実行時にサービスを名前で取得するのに近い。
 
 ```typescript
-// NestJS 相当: Dynamic Module
+// NestJS: コンパイル時に型を知らなくても、実行時に名前で取得
+const service = moduleRef.get('CONTEXT_MANAGER');
+```
+
+```kotlin
+// Kotlin: ServiceLoader が META-INF/services を読んで実装クラスを自動検出
+val plugins = ServiceLoader.load(VigilPlugin::class.java)
+plugins.forEach { engine.register(it) }
+// → ContextManagerPlugin のインスタンスが返る（import 不要）
+```
+
+仕組み: プラグインモジュール側にテキストファイルを配置するだけで、
+JVM がクラス名の文字列からインスタンスを生成する。
+
+```text
+plugins/context-manager/src/jvmMain/resources/
+  META-INF/services/vigil.plugin.VigilPlugin
+  └─ 中身: "vigil.plugin.contextmanager.ContextManagerPlugin"
+```
+
+### リフレクションパターン
+
+NestJS で言うと `Reflect.getMetadata()` でデコレータ情報を実行時に読むのに近い。
+
+```typescript
+// NestJS: @Injectable() デコレータの情報を実行時に読む
+const metadata = Reflect.getMetadata('design:paramtypes', target);
+```
+
+```kotlin
+// Kotlin: クラス名の文字列から実行時にインスタンスを生成（import 不要）
+val clazz = Class.forName("vigil.plugin.contextmanager.ContextManagerPlugin")
+val plugin = clazz.getDeclaredConstructor().newInstance() as VigilPlugin
+engine.register(plugin)
+```
+
+設定ファイル（YAML や JSON）にクラス名を列挙し、起動時に動的ロードする使い方が一般的。
+
+### 対比表
+
+| 観点 | 直接 import | サービスロケータ | リフレクション |
+| --- | --- | --- | --- |
+| NestJS 相当 | `constructor(private svc: Foo)` | `moduleRef.get('FOO')` | `Reflect.getMetadata()` |
+| 循環依存 | 発生する | 発生しない | 発生しない |
+| 型安全性 | コンパイル時に保証 | 実行時に検証 | 実行時に検証 |
+| 設定 | 不要 | `META-INF/services` ファイル | クラス名の文字列 |
+| プラグイン追加時 | コード変更が必要 | ファイル追加のみ | 設定ファイル追記 |
+
+### どちらを選ぶか
+
+```typescript
+// NestJS 相当: Dynamic Module（サービスロケータ寄り）
 @Module({})
 export class PluginModule {
   static register(plugins: Type<any>[]): DynamicModule {
@@ -268,5 +318,10 @@ export class PluginModule {
   }
 }
 ```
+
+Kotlin では **ServiceLoader が推奨**。理由:
+- JVM 標準 API（追加依存なし）
+- プラグイン側がファイルを1つ追加するだけで自動登録される
+- リフレクションより型安全（`ServiceLoader<VigilPlugin>` で型が絞られる）
 
 現時点ではプロトタイプのため、検証スクリプトでの手動実行で十分。
