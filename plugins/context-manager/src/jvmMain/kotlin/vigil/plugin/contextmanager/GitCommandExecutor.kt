@@ -6,6 +6,9 @@ import java.io.File
 // JVM 専用実装。
 class GitCommandExecutor(private val workingDir: File = File(".")) {
 
+    // プロトタイプでは main 固定。将来は git symbolic-ref refs/remotes/origin/HEAD で自動検出。
+    fun defaultBranch(): String = "main"
+
     fun diffStat(): String = execute("git", "diff", "--stat")
 
     fun statusShort(): String = execute("git", "status", "--short")
@@ -16,7 +19,15 @@ class GitCommandExecutor(private val workingDir: File = File(".")) {
     fun branchName(): String =
         execute("git", "rev-parse", "--abbrev-ref", "HEAD").trim()
 
-    private fun execute(vararg command: String): String {
+    // デフォルトブランチからの差分コミット（このブランチの作業内容）
+    fun logFromDefault(): String =
+        execute("git", "log", "${defaultBranch()}..HEAD", "--pretty=format:%h %s")
+
+    // デフォルトブランチとの差分統計
+    fun diffStatFromDefault(): String =
+        execute("git", "diff", "${defaultBranch()}..HEAD", "--stat")
+
+    internal fun execute(vararg command: String): String {
         val process = ProcessBuilder(*command)
             .directory(workingDir)
             .redirectErrorStream(true)

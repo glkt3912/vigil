@@ -9,4 +9,8 @@ data class MonitorConfig(
     val wsUrl: String,
     val reconnect: BackoffConfig = BackoffConfig(),
     val bufferSize: Int = 256,
+    // フィードバックループ防止: プラグイン出力先を監視対象から除外する。
+    // ContextManagerPlugin が .vigil/ に書き出す → WatchService が検知 → 再スナップショット
+    // という無限ループを防ぐため、デフォルトで .vigil を除外。
+    val excludePaths: List<String> = listOf(".vigil"),
 )

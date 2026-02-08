@@ -8,6 +8,9 @@ local.properties
 *.iml
 .vscode/
 
+# Vigil
+.vigil/
+
 # OS
 .DS_Store
 Thumbs.db

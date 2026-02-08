@@ -34,11 +34,10 @@ class ContextManagerPluginTest {
         val plugin = ContextManagerPlugin(repoPath = findRepoRoot(), outputPath = testOutputPath)
         val snapshot = plugin.buildSnapshot()
 
-        assertContains(snapshot, "# Development Context Snapshot")
-        assertContains(snapshot, "## Branch")
-        assertContains(snapshot, "## Status")
-        assertContains(snapshot, "## Diff (stat)")
-        assertContains(snapshot, "## Recent Commits")
+        assertContains(snapshot, "# 開発コンテキスト")
+        assertContains(snapshot, "## 現在の作業")
+        assertContains(snapshot, "## このブランチでの変更内容")
+        assertContains(snapshot, "## 未コミットの変更")
     }
 
     @Test
@@ -50,7 +49,7 @@ class ContextManagerPluginTest {
 
         val file = File(testOutputPath)
         assertTrue(file.exists(), "snapshot file should be created")
-        assertContains(file.readText(), "# Development Context Snapshot")
+        assertContains(file.readText(), "# 開発コンテキスト")
         assertTrue(published.isNotEmpty(), "should have published a message")
 
         // cleanup
@@ -68,7 +67,7 @@ class ContextManagerPluginTest {
         val secondContent = File(testOutputPath).readText()
 
         // 内容は同じ形式（ヘッダーが同一）
-        assertContains(secondContent, "# Development Context Snapshot")
+        assertContains(secondContent, "# 開発コンテキスト")
         assertTrue(firstContent.isNotBlank())
 
         // cleanup
