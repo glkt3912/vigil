@@ -2,6 +2,7 @@ package vigil
 
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.runBlocking
+import vigil.buffer.LogRingBuffer
 import vigil.core.MonitorConfig
 import vigil.engine.DefaultPluginContext
 import vigil.engine.VigilEngine
@@ -22,6 +23,7 @@ fun main() = runBlocking {
         wsUrl = "ws://localhost:8080/logs",
     )
 
+    val historyBuffer = LogRingBuffer(config.historySize)
     val context = DefaultPluginContext(config)
     val engine = VigilEngine(heartbeatInterval = 30.seconds)
 
@@ -29,7 +31,7 @@ fun main() = runBlocking {
     // engine.register(ContextManagerPlugin())
 
     // パイプライン接続例:
-    // val pipeline = WebSocketPipeline(config, httpClient)
+    // val pipeline = WebSocketPipeline(config, httpClient, historyBuffer)
     // launch { pipeline.connect(context.events) }
 
     coroutineScope {
