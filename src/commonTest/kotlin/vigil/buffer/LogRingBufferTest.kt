@@ -3,6 +3,8 @@ package vigil.buffer
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertTrue
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import vigil.model.LogEvent
@@ -96,10 +98,33 @@ class LogRingBufferTest {
     }
 
     @Test
-    fun `capacity must be positive`() {
+    fun `capacity of zero is rejected`() {
         assertFailsWith<IllegalArgumentException> {
             LogRingBuffer(capacity = 0)
         }
+    }
+
+    @Test
+    fun `negative capacity is rejected`() {
+        assertFailsWith<IllegalArgumentException> {
+            LogRingBuffer(capacity = -1)
+        }
+    }
+
+    @Test
+    fun `clear then add restores normal operation`() = runTest {
+        val buf = LogRingBuffer(capacity = 3)
+        buf.add(event(1))
+        buf.add(event(2))
+        buf.clear()
+
+        buf.add(event(10))
+        buf.add(event(11))
+
+        val snap = buf.snapshot()
+        assertEquals(2, snap.size)
+        assertEquals("evt-10", snap[0].id)
+        assertEquals("evt-11", snap[1].id)
     }
 
     @Test
@@ -110,5 +135,24 @@ class LogRingBufferTest {
         }
         val snap = buf.snapshot()
         assertEquals(listOf("evt-8", "evt-9", "evt-10"), snap.map { it.id })
+    }
+
+    @Test
+    fun `concurrent adds do not corrupt buffer`() = runTest {
+        val buf = LogRingBuffer(capacity = 100)
+        val jobs = (1..10).map { batch ->
+            launch {
+                for (i in 1..100) {
+                    buf.add(event(batch * 1000 + i))
+                }
+            }
+        }
+        jobs.forEach { it.join() }
+
+        val snap = buf.snapshot()
+        assertEquals(100, snap.size)
+        // 全要素がユニークで null でないことを検証
+        assertEquals(100, snap.map { it.id }.toSet().size)
+        assertTrue(snap.all { it.id.startsWith("evt-") })
     }
 }

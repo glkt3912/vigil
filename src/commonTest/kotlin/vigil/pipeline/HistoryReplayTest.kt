@@ -2,6 +2,7 @@ package vigil.pipeline
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
@@ -75,7 +76,27 @@ class HistoryReplayTest {
         assertEquals("true", combined[0].metadata["historical"])
     }
 
+    @Test
+    fun `withHistory with history only and no live events`() = runTest {
+        val buffer = LogRingBuffer(capacity = 10)
+        buffer.add(event("old-1"))
+        buffer.add(event("old-2"))
+
+        val combined = emptyFlow<LogEvent>().withHistory(buffer).toList()
+
+        assertEquals(2, combined.size)
+        assertEquals("true", combined[0].metadata["historical"])
+        assertEquals("true", combined[1].metadata["historical"])
+    }
+
     // --- recordTo ---
+
+    @Test
+    fun `recordTo with empty flow does not modify buffer`() = runTest {
+        val buffer = LogRingBuffer(capacity = 10)
+        emptyFlow<LogEvent>().recordTo(buffer).toList()
+        assertEquals(0, buffer.size())
+    }
 
     @Test
     fun `recordTo stores events in buffer while passing them through`() = runTest {
