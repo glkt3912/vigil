@@ -9,6 +9,9 @@ data class MonitorConfig(
     val wsUrl: String,
     val reconnect: BackoffConfig = BackoffConfig(),
     val bufferSize: Int = 256,
+    // リングバッファのキャパシティ。直近 N 件の LogEvent を保持し、
+    // WebSocket 接続時に履歴としてバースト送信する。
+    val historySize: Int = 1000,
     // フィードバックループ防止: プラグイン出力先を監視対象から除外する。
     // ContextManagerPlugin が .vigil/ に書き出す → WatchService が検知 → 再スナップショット
     // という無限ループを防ぐため、デフォルトで .vigil を除外。

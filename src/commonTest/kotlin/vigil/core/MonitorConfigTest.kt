@@ -14,6 +14,7 @@ class MonitorConfigTest {
         )
         assertEquals(BackoffConfig(), config.reconnect)
         assertEquals(256, config.bufferSize)
+        assertEquals(1000, config.historySize)
     }
 
     @Test
@@ -24,8 +25,10 @@ class MonitorConfigTest {
             wsUrl = "ws://example.com/ws",
             reconnect = customBackoff,
             bufferSize = 1024,
+            historySize = 500,
         )
         assertEquals(5, config.reconnect.maxRetries)
         assertEquals(1024, config.bufferSize)
+        assertEquals(500, config.historySize)
     }
 }
