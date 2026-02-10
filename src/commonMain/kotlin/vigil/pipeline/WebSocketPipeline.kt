@@ -26,8 +26,10 @@ class WebSocketPipeline(
     // Flow<LogEvent> を受け取り、JSON 化して WebSocket で送信する。
     // buffer() でバックプレッシャー制御、retryWithBackoff() で自動再接続。
     // historyBuffer が指定されている場合:
-    //   - recordTo() でイベントをバッファに蓄積（切断中も継続）
+    //   - recordTo() で送信済みイベントをバッファに蓄積
     //   - withHistory() で接続時に履歴をバースト送信してからライブストリームに移行
+    // 注意: Flow は lazy なため、recordTo は collect 中のみ動作する。
+    // WebSocket 切断中のイベントはバッファに記録されない。
     suspend fun connect(events: Flow<LogEvent>) {
         val recorded = if (historyBuffer != null) {
             events.recordTo(historyBuffer)

@@ -16,4 +16,8 @@ data class MonitorConfig(
     // ContextManagerPlugin が .vigil/ に書き出す → WatchService が検知 → 再スナップショット
     // という無限ループを防ぐため、デフォルトで .vigil を除外。
     val excludePaths: List<String> = listOf(".vigil"),
-)
+) {
+    init {
+        require(historySize > 0) { "historySize must be positive, was $historySize" }
+    }
+}

@@ -184,6 +184,7 @@ internal fun LogEvent.withHistoricalFlag(historical: Boolean): LogEvent =
   "id": "evt-001",
   "timestamp": "2025-01-15T10:30:00Z",
   "level": "ERROR",
+  "source": "/var/log/app.log",
   "message": "Connection timeout",
   "metadata": { "historical": "true" }
 }
@@ -193,6 +194,7 @@ internal fun LogEvent.withHistoricalFlag(historical: Boolean): LogEvent =
   "id": "evt-042",
   "timestamp": "2025-01-15T10:30:05Z",
   "level": "INFO",
+  "source": "/var/log/app.log",
   "message": "Request completed",
   "metadata": { "historical": "false" }
 }
@@ -260,12 +262,20 @@ class WebSocketPipeline(
 **ポイント**: `recordTo` と `withHistory` の配置が異なる。
 
 ```text
-recordTo: webSocket ブロック外
-  → WebSocket が切断されていてもイベントをバッファに蓄積し続ける
+recordTo: webSocket ブロック外で宣言
+  → Flow 定義を webSocket セッションから分離し、再接続時に再利用可能にする
+  → ただし Flow は lazy なため、実際の記録は collect 中のみ動作する
+  → WebSocket 切断中のイベントはバッファに記録されない
 
-withHistory: webSocket ブロック内
+withHistory: webSocket ブロック内で適用
   → 接続のたびに最新のスナップショットを取得して送信
 ```
+
+> **注意**: Flow は lazy（遅延評価）なので、`recordTo` はパイプラインが
+> collect されている間だけ動作する。WebSocket 切断〜再接続の間に発生した
+> イベントはバッファに記録されず、失われる。これは Kotlin Flow の特性による
+> 制約であり、`SharedFlow` + 別コルーチンでの常時記録で解決可能だが、
+> 現時点ではシンプルさを優先している。
 
 ---
 

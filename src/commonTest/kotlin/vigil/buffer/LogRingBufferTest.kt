@@ -128,6 +128,18 @@ class LogRingBufferTest {
     }
 
     @Test
+    fun `exactly at capacity without overflow`() = runTest {
+        val buf = LogRingBuffer(capacity = 3)
+        buf.add(event(1))
+        buf.add(event(2))
+        buf.add(event(3))
+
+        assertEquals(3, buf.size())
+        val snap = buf.snapshot()
+        assertEquals(listOf("evt-1", "evt-2", "evt-3"), snap.map { it.id })
+    }
+
+    @Test
     fun `full wrap-around maintains correct order`() = runTest {
         val buf = LogRingBuffer(capacity = 3)
         for (i in 1..10) {

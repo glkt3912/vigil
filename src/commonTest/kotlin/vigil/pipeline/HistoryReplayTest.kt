@@ -2,11 +2,14 @@ package vigil.pipeline
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import vigil.buffer.LogRingBuffer
 import vigil.model.LogEvent
 import vigil.model.LogLevel
@@ -87,6 +90,40 @@ class HistoryReplayTest {
         assertEquals(2, combined.size)
         assertEquals("true", combined[0].metadata["historical"])
         assertEquals("true", combined[1].metadata["historical"])
+    }
+
+    @Test
+    fun `withHistory overwrites existing historical flag on live events`() = runTest {
+        val buffer = LogRingBuffer(capacity = 10)
+
+        val eventWithFlag = event("live-1").copy(
+            metadata = mapOf("historical" to "true"),
+        )
+        val live = flowOf(eventWithFlag)
+        val combined = live.withHistory(buffer).toList()
+
+        assertEquals(1, combined.size)
+        assertEquals("false", combined[0].metadata["historical"])
+    }
+
+    @Test
+    fun `historical flag is correctly serialized to JSON`() = runTest {
+        val json = Json { encodeDefaults = true }
+        val buffer = LogRingBuffer(capacity = 10)
+        buffer.add(event("old-1"))
+
+        val live = flowOf(event("new-1"))
+        val combined = live.withHistory(buffer).toList()
+
+        val historicalJson = json.encodeToString(combined[0])
+        val liveJson = json.encodeToString(combined[1])
+
+        assertTrue(historicalJson.contains("\"historical\":\"true\""))
+        assertTrue(liveJson.contains("\"historical\":\"false\""))
+
+        // JSON → LogEvent にデシリアライズしてもフラグが保持される
+        val deserialized = json.decodeFromString<LogEvent>(historicalJson)
+        assertEquals("true", deserialized.metadata["historical"])
     }
 
     // --- recordTo ---

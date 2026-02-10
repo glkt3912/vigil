@@ -2,6 +2,7 @@ package vigil.core
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import vigil.retry.BackoffConfig
 
 class MonitorConfigTest {
@@ -30,5 +31,27 @@ class MonitorConfigTest {
         assertEquals(5, config.reconnect.maxRetries)
         assertEquals(1024, config.bufferSize)
         assertEquals(500, config.historySize)
+    }
+
+    @Test
+    fun `historySize of zero is rejected`() {
+        assertFailsWith<IllegalArgumentException> {
+            MonitorConfig(
+                watchPath = "/tmp/test.log",
+                wsUrl = "ws://localhost/ws",
+                historySize = 0,
+            )
+        }
+    }
+
+    @Test
+    fun `negative historySize is rejected`() {
+        assertFailsWith<IllegalArgumentException> {
+            MonitorConfig(
+                watchPath = "/tmp/test.log",
+                wsUrl = "ws://localhost/ws",
+                historySize = -1,
+            )
+        }
     }
 }
